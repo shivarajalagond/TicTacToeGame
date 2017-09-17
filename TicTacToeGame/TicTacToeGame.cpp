@@ -75,7 +75,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TICTACTOEGAME));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    //wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+	wcex.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_TICTACTOEGAME);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -121,6 +122,35 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - post a quit message and return
 //
 //
+
+// Global variables for game
+const int CELL_SIZE = 100;
+
+//Function to find the center to draw rectangle
+BOOL GetGameBoardeRect(HWND hWnd, RECT * pRect) {
+	RECT rc;
+	if (GetClientRect(hWnd, &rc)) {
+
+		int width = rc.right - rc.left;
+		int height = rc.bottom - rc.top;
+
+
+		pRect->left = (width - CELL_SIZE * 3) / 2;
+		pRect->top = (height - CELL_SIZE * 3) / 2;
+		pRect->right = pRect->left + CELL_SIZE * 3;
+		pRect->bottom = pRect->top + CELL_SIZE * 3;
+		return TRUE;
+	}
+	SetRectEmpty(pRect);
+	return FALSE;
+
+}
+
+void DrawLine(HDC hwnd, int x1, int y1, int x2, int y2) {
+	MoveToEx(hwnd, x1, y1, NULL );
+	LineTo(hwnd, x2, y2);
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -142,11 +172,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+	case WM_GETMINMAXINFO: {
+		MINMAXINFO * pminmax = (MINMAXINFO *) lParam;
+		pminmax->ptMinTrackSize.x = CELL_SIZE * 5;
+		pminmax->ptMinTrackSize.y = CELL_SIZE * 5;
+	}
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
+			RECT rc;
+			if (GetGameBoardeRect(hWnd, &rc)) {
+				FillRect(hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+			}
+
+			for (int i = 0; i < 4; i++) {
+
+            //TO Draw Vertical Lines
+			DrawLine(hdc, rc.left + i*CELL_SIZE, rc.top , rc.left + i * CELL_SIZE, rc.bottom);
+		    //To Draw Horizontal Lines
+			DrawLine(hdc, rc.left, rc.top + i* CELL_SIZE, rc.right, rc.top + i* CELL_SIZE);
+			}
+			
             EndPaint(hWnd, &ps);
         }
         break;
