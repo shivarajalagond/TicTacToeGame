@@ -246,7 +246,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Parse the menu selections:
             switch (wmId)
             {
-
+			case ID_NEW:
+			{
+				int ret = MessageBox(hWnd, L"Are you sure want to start a new game ?", L"New Game", MB_YESNO | MB_ICONQUESTION);
+				if (IDYES == ret)
+					playerTurn = 1;
+				    winner = 0;
+					ZeroMemory(gameBoard, sizeof(gameBoard));
+					InvalidateRect(hWnd, NULL, TRUE);
+					UpdateWindow(hWnd);
+			}
+			break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -277,12 +287,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		HDC hdc = GetDC(hWnd); 
 
-		if (NULL != hdc) {
-			WCHAR temp[100];
-			wsprintf(temp, L"Index = %d", index);
-			TextOut(hdc, xPos, yPos, temp, lstrlen(temp));
+		//if (NULL != hdc) {
+		//	WCHAR temp[100];
+		//	wsprintf(temp, L"Index = %d", index);
+		//	//TextOut(hdc, xPos, yPos, temp, lstrlen(temp));
 
-		}
+		//}
 
 		if (index != -1) {
 			RECT rccell;
@@ -295,7 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			  if (winner == 1 || winner == 2) {
 
 				  //To notify the winner
-				  MessageBox(hWnd, (winner == 1) ? L"Player 1 Won!" : L"Player 2 Won!2",
+				  MessageBox(hWnd, (winner == 1) ? L"Player 1 Won!" : L"Player 2 Won!",
 					  L"You Win",
 					  MB_OK | MB_ICONINFORMATION);
 				  playerTurn = 0;
