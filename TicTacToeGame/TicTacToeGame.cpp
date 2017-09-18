@@ -125,6 +125,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 // Global variables for game
 const int CELL_SIZE = 100;
+HBRUSH hbr1, hbr2;
+int playerTurn = 1;
+HICON hIcon1,hIcon2;
+int gameBoard[9] = { 0,0,0,0,0,0,0,0,0 };
+int winner = 0;
+int wins[3];
 
 //Function to find the center to draw rectangle
 BOOL GetGameBoardeRect(HWND hWnd, RECT * pRect) {
@@ -194,10 +200,46 @@ BOOL GetCellRect(HWND hWnd, int index, RECT * rccell) {
 
 	}
 }
+
+int GetWinner(int wins[3]) {
+
+	int cells[] = { 0,1,2, 3,4,5, 6,7,8,  0,3,6,  1,4,7, 2,5,8,  0,4,8, 2,4,6 };
+
+	for (int i = 0; i < ARRAYSIZE(cells); i += 3) {
+
+		if ((0 != gameBoard[cells[i]]) && gameBoard[cells[i]] == gameBoard[cells[i + 1]]
+			&& gameBoard[cells[i]] == gameBoard[cells[i + 2]])
+		{
+			// winner is present
+			wins[0] = cells[i];
+			wins[1] = cells[i + 1];
+			wins[2] = cells[i + 2];
+
+			return gameBoard[cells[i]];
+		}
+	}
+		//if all the spaces are not over
+		
+		for (int i = 0; i < ARRAYSIZE(cells); i++) 
+			if (0 == gameBoard[i]) 
+				return 0;
+			
+		return 3;
+
+	}
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+
+	case WM_CREATE: {
+		hbr1 = CreateSolidBrush(RGB(255, 0, 0));
+		hbr2 = CreateSolidBrush(RGB(0, 0, 255));
+	}
+	break;
+
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -227,6 +269,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int xPos = GET_X_LPARAM(lParam);
 		int yPos = GET_Y_LPARAM(lParam);
 
+		if (playerTurn == 0)
+			break;
 		int index = GetCellIndexFromPoint(hWnd, xPos, yPos);
 
 
@@ -241,9 +285,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		if (index != -1) {
 			RECT rccell;
-			if(GetCellRect(hWnd, index, &rccell)) {
-				FillRect(hdc, &rccell, HBRUSH(WHITE_BRUSH));
+			if(gameBoard[index] ==0 && GetCellRect(hWnd, index, &rccell)) {
+				gameBoard[index] = playerTurn;
+				FillRect(hdc, &rccell, playerTurn ==2 ? hbr1 : hbr2);
+				
+				//To check for the winner
+			  winner = GetWinner(wins);
+			  if (winner == 1 || winner == 2) {
+
+				  //To notify the winner
+				  MessageBox(hWnd, (winner == 1) ? L"Player 1 Won!" : L"Player 2 Won!2",
+					  L"You Win",
+					  MB_OK | MB_ICONINFORMATION);
+				  playerTurn = 0;
+
+			  }
+			  else if (winner == 0) {
+				  playerTurn = (playerTurn == 1) ? 2 : 1;
+			  }
+			  else if (winner == 3) {
+				  MessageBox(hWnd, L"Its a draw",
+					  L"Well played!!",
+					  MB_OK | MB_ICONINFORMATION);
+				  playerTurn = 0;
+			  }
+				
 			}
+			
 		}
 
 	}
@@ -265,10 +333,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DrawLine(hdc, rc.left, rc.top + i* CELL_SIZE, rc.right, rc.top + i* CELL_SIZE);
 			}
 			
+			// To draw all occupied Cells
+			RECT rect;
+			for (int i = 0; i < 9; i++) {
+
+				if (0 != gameBoard[i] && GetCellRect(hWnd, i, &rect)) {
+
+					FillRect(hdc, &rect, (gameBoard[i] == 1) ? hbr2 : hbr1);
+				}
+			}
             EndPaint(hWnd, &ps);
         }
         break;
     case WM_DESTROY:
+		DeleteObject(hbr1);
+		DeleteObject(hbr2);
         PostQuitMessage(0);
         break;
     default:
