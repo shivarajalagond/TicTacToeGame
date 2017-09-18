@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "TicTacToeGame.h"
-
+#include <windowsx.h>
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -146,11 +146,54 @@ BOOL GetGameBoardeRect(HWND hWnd, RECT * pRect) {
 
 }
 
+//To draw the lines inside the layout
 void DrawLine(HDC hwnd, int x1, int y1, int x2, int y2) {
 	MoveToEx(hwnd, x1, y1, NULL );
 	LineTo(hwnd, x2, y2);
 }
 
+//To get the mouseclick position
+int GetCellIndexFromPoint(HWND hdc, int x, int y) {
+	POINT pt = {x,y};
+	RECT rc;
+	if (GetGameBoardeRect(hdc, &rc)) {
+		if (PtInRect(&rc, pt)) {
+		
+			//Normalize x & y
+			x = pt.x - rc.left;
+			y = pt.y - rc.top;
+
+			int column = x / CELL_SIZE;
+			int row = y / CELL_SIZE;
+
+			//convert to index  ( 0 to 8)
+			return column + row * 3;
+		}
+	}
+	return -1; //Outise the layout
+}
+
+BOOL GetCellRect(HWND hWnd, int index, RECT * rccell) {
+
+	RECT rect;
+	SetRectEmpty(rccell);
+	if (index < 0 || index >8) {
+		return FALSE;
+	}
+
+	if (GetGameBoardeRect(hWnd, &rect)) {
+
+		int x = index % 3;
+		int y = index / 3;
+		rccell->left = rect.left + x* CELL_SIZE + 1;
+		rccell->top = rect.top + y* CELL_SIZE + 1;
+		rccell->right = rccell->left + CELL_SIZE - 1;
+		rccell->bottom = rccell->top + CELL_SIZE - 1;
+
+		return TRUE;
+
+	}
+}
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -177,6 +220,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		pminmax->ptMinTrackSize.x = CELL_SIZE * 5;
 		pminmax->ptMinTrackSize.y = CELL_SIZE * 5;
 	}
+		break;
+
+	case WM_LBUTTONDOWN: {
+
+		int xPos = GET_X_LPARAM(lParam);
+		int yPos = GET_Y_LPARAM(lParam);
+
+		int index = GetCellIndexFromPoint(hWnd, xPos, yPos);
+
+
+		HDC hdc = GetDC(hWnd); 
+
+		if (NULL != hdc) {
+			WCHAR temp[100];
+			wsprintf(temp, L"Index = %d", index);
+			TextOut(hdc, xPos, yPos, temp, lstrlen(temp));
+
+		}
+
+		if (index != -1) {
+			RECT rccell;
+			if(GetCellRect(hWnd, index, &rccell)) {
+				FillRect(hdc, &rccell, HBRUSH(WHITE_BRUSH));
+			}
+		}
+
+	}
+	break;
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
